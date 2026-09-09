@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161c" media="(prefers-color-scheme: dark)">
+<title>Quizbowl Practice</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --accent: #3b5bdb;
+    --accent-ink: #ffffff;
+    --answer-bg: #ecfdf3;
+    --answer-border: #34a06b;
+    --border: #e2ded4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161c;
+      --card: #1e2129;
+      --ink: #e8e8ea;
+      --muted: #9aa0ac;
+      --accent: #6f8bff;
+      --accent-ink: #0d1020;
+      --answer-bg: #16281f;
+      --answer-border: #2f8f60;
+      --border: #2c303a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Georgia", "Times New Roman", serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    padding-top: max(2rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    -webkit-text-size-adjust: 100%;
+  }
+  header {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    font-family: system-ui, sans-serif;
+  }
+  h1 { font-size: 1.15rem; margin: 0; letter-spacing: .02em; }
+  .controls { display: flex; gap: .5rem; flex-wrap: wrap; }
+  select {
+    font: inherit;
+    font-size: .85rem;
+    padding: .4rem .55rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--ink);
+  }
+  .mode {
+    display: flex;
+    width: 100%;
+    max-width: 760px;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: system-ui, sans-serif;
+  }
+  .mode button {
+    flex: 1;
+    font-size: .9rem;
+    padding: .55rem 0;
+    border: none;
+    border-radius: 0;
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .mode button.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .card {
+    width: 100%;
+    max-width: 760px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  }
+  .meta {
+    font-family: system-ui, sans-serif;
+    font-size: .78rem;
+    color: var(--muted);
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .meta span { background: var(--bg); padding: .2rem .6rem; border-radius: 999px; }
+  #question { font-size: 1.13rem; line-height: 1.75; min-height: 6rem; }
+  #question .placeholder { color: var(--muted); font-style: italic; }
+  .leadin { margin-bottom: 1rem; }
+  .part { margin-bottom: 1rem; }
+  .part .part-label {
+    font-family: system-ui, sans-serif;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    display: block;
+    margin-bottom: .2rem;
+  }
+  .part-answer {
+    margin: .6rem 0 0;
+    padding: .6rem .9rem;
+    background: var(--answer-bg);
+    border-left: 4px solid var(--answer-border);
+    border-radius: 6px;
+  }
+  #answer {
+    display: none;
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--answer-bg);
+    border-left: 4px solid var(--answer-border);
+    border-radius: 6px;
+    font-size: 1.15rem;
+  }
+  #answer.shown { display: block; }
+  #answer .label, .part-answer .label {
+    font-family: system-ui, sans-serif;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    display: block;
+    margin-bottom: .3rem;
+  }
+  .buttons {
+    display: flex;
+    gap: .75rem;
+    margin-top: 1.5rem;
+    font-family: system-ui, sans-serif;
+  }
+  button {
+    font: inherit;
+    font-size: .95rem;
+    padding: .65rem 1.4rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-color: transparent;
+  }
+  button:disabled { opacity: .45; cursor: default; }
+  .hint {
+    font-family: system-ui, sans-serif;
+    font-size: .75rem;
+    color: var(--muted);
+    margin-top: 1rem;
+  }
+  #error { color: #c0392b; font-family: system-ui, sans-serif; }
+
+  /* Phone layout */
+  @media (max-width: 600px) {
+    body { padding-left: 0; padding-right: 0; padding-top: max(1rem, env(safe-area-inset-top)); }
+    header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: .6rem;
+      padding: 0 1rem;
+      margin-bottom: .9rem;
+    }
+    h1 { text-align: center; font-size: 1.05rem; }
+    .controls { width: 100%; }
+    .controls select {
+      flex: 1;
+      min-width: 0;
+      font-size: 16px; /* prevents iOS zoom-on-focus */
+      padding: .6rem .5rem;
+    }
+    .mode { max-width: none; margin: 0 1rem .75rem; width: auto; align-self: stretch; }
+    .mode button { font-size: 16px; padding: .65rem 0; }
+    .card {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+      padding: 1.25rem 1.1rem 1.4rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    #question { font-size: 1.05rem; line-height: 1.7; flex: 1; min-height: 0; }
+    .buttons {
+      position: sticky;
+      bottom: 0;
+      background: var(--card);
+      padding: .75rem 0 max(.25rem, env(safe-area-inset-bottom));
+      margin-top: 1.1rem;
+    }
+    .buttons button {
+      flex: 1;
+      padding: .9rem 0;
+      font-size: 1.05rem;
+    }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Quizbowl Practice</h1>
+  <div class="controls">
+    <select id="category">
+      <option value="">All categories</option>
+      <option>Literature</option>
+      <option>History</option>
+      <option>Science</option>
+      <option>Fine Arts</option>
+      <option>Religion</option>
+      <option>Mythology</option>
+      <option>Philosophy</option>
+      <option>Social Science</option>
+      <option>Current Events</option>
+      <option>Geography</option>
+      <option>Other Academic</option>
+      <option>Pop Culture</option>
+    </select>
+    <select id="difficulty">
+      <option value="">Any difficulty</option>
+      <option value="1,2">Middle school (1–2)</option>
+      <option value="3,4,5">High school (3–5)</option>
+      <option value="6,7">Easy/regular college (6–7)</option>
+      <option value="8,9,10">Hard college / open (8–10)</option>
+    </select>
+  </div>
+</header>
+
+<div class="mode">
+  <button id="mode-tossup" class="active">Tossups</button>
+  <button id="mode-bonus">Bonuses</button>
+</div>
+
+<div class="card">
+  <div class="meta" id="meta"></div>
+  <div id="question"><span class="placeholder">Press “New Question” to start.</span></div>
+  <div id="answer"><span class="label">Answer</span><span id="answer-text"></span></div>
+  <div class="buttons">
+    <button class="primary" id="new-btn">New Question</button>
+    <button id="reveal-btn" disabled>Reveal Answer</button>
+  </div>
+  <div class="hint"><b>Space</b> = reveal answer, then next question. (<b>N</b> = skip to a new question.) Questions from the hsquizbowl packet archive via qbreader.org.</div>
+</div>
+
+<script>
+const questionEl = document.getElementById('question');
+const answerEl = document.getElementById('answer');
+const answerTextEl = document.getElementById('answer-text');
+const metaEl = document.getElementById('meta');
+const newBtn = document.getElementById('new-btn');
+const revealBtn = document.getElementById('reveal-btn');
+const categorySel = document.getElementById('category');
+const difficultySel = document.getElementById('difficulty');
+const modeTossupBtn = document.getElementById('mode-tossup');
+const modeBonusBtn = document.getElementById('mode-bonus');
+
+let mode = 'tossup';          // 'tossup' | 'bonus'
+let queues = { tossup: [], bonus: [] };
+let currentBonus = null;      // the bonus being played
+let bonusPart = 0;            // how many parts have been revealed
+
+function setMode(m) {
+  mode = m;
+  modeTossupBtn.classList.toggle('active', m === 'tossup');
+  modeBonusBtn.classList.toggle('active', m === 'bonus');
+  newBtn.textContent = m === 'tossup' ? 'New Tossup' : 'New Bonus';
+  resetCard();
+}
+
+function resetCard() {
+  questionEl.innerHTML = '<span class="placeholder">Press “' + newBtn.textContent + '” to start.</span>';
+  answerEl.classList.remove('shown');
+  metaEl.innerHTML = '';
+  revealBtn.disabled = true;
+  currentBonus = null;
+}
+
+async function fetchBatch(kind) {
+  const params = new URLSearchParams({ number: '10' });
+  if (categorySel.value) params.set('categories', categorySel.value);
+  if (difficultySel.value) params.set('difficulties', difficultySel.value);
+  const endpoint = kind === 'tossup' ? 'random-tossup' : 'random-bonus';
+  const res = await fetch('https://www.qbreader.org/api/' + endpoint + '?' + params);
+  if (!res.ok) throw new Error('API error ' + res.status);
+  const data = await res.json();
+  return (kind === 'tossup' ? data.tossups : data.bonuses) || [];
+}
+
+function setMeta(q) {
+  const bits = [];
+  if (q.category) bits.push(q.category + (q.subcategory ? ' · ' + q.subcategory : ''));
+  if (q.set && q.set.name) bits.push(q.set.name);
+  if (q.difficulty) bits.push('Difficulty ' + q.difficulty);
+  metaEl.innerHTML = '';
+  bits.forEach(b => {
+    const s = document.createElement('span');
+    s.textContent = b;
+    metaEl.appendChild(s);
+  });
+}
+
+async function nextQuestion() {
+  newBtn.disabled = true;
+  revealBtn.disabled = true;
+  answerEl.classList.remove('shown');
+  questionEl.innerHTML = '<span class="placeholder">Loading…</span>';
+  metaEl.innerHTML = '';
+  currentBonus = null;
+  window.scrollTo({ top: 0 });
+  try {
+    if (queues[mode].length === 0) queues[mode] = await fetchBatch(mode);
+    const q = queues[mode].shift();
+    if (!q) throw new Error('No questions matched those filters.');
+    setMeta(q);
+    if (mode === 'tossup') {
+      questionEl.innerHTML = q.question;
+      answerTextEl.innerHTML = q.answer;
+    } else {
+      currentBonus = q;
+      bonusPart = 0;
+      questionEl.innerHTML = '';
+      const leadin = document.createElement('div');
+      leadin.className = 'leadin';
+      leadin.innerHTML = q.leadin;
+      questionEl.appendChild(leadin);
+      showBonusPart(0);
+    }
+    revealBtn.disabled = false;
+  } catch (e) {
+    questionEl.innerHTML = '<span id="error">Couldn’t load a question (' + e.message + '). Check your connection and try again.</span>';
+  } finally {
+    newBtn.disabled = false;
+  }
+}
+
+function showBonusPart(i) {
+  const part = document.createElement('div');
+  part.className = 'part';
+  part.id = 'part-' + i;
+  part.innerHTML = '<span class="part-label">Part ' + (i + 1) + ' of ' +
+    currentBonus.parts.length + '</span>' + currentBonus.parts[i];
+  questionEl.appendChild(part);
+  part.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function reveal() {
+  if (revealBtn.disabled) return;
+  if (mode === 'tossup') {
+    answerEl.classList.add('shown');
+    revealBtn.disabled = true;
+    answerEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    const partEl = document.getElementById('part-' + bonusPart);
+    const ans = document.createElement('div');
+    ans.className = 'part-answer';
+    ans.innerHTML = '<span class="label">Answer</span>' + currentBonus.answers[bonusPart];
+    partEl.appendChild(ans);
+    bonusPart++;
+    if (bonusPart < currentBonus.parts.length) {
+      showBonusPart(bonusPart);
+    } else {
+      revealBtn.disabled = true;
+      ans.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+}
+
+newBtn.addEventListener('click', nextQuestion);
+revealBtn.addEventListener('click', reveal);
+modeTossupBtn.addEventListener('click', () => setMode('tossup'));
+modeBonusBtn.addEventListener('click', () => setMode('bonus'));
+categorySel.addEventListener('change', () => { queues = { tossup: [], bonus: [] }; });
+difficultySel.addEventListener('change', () => { queues = { tossup: [], bonus: [] }; });
+// Space is the single "advance" key: reveal what's hidden, and once everything
+// on the card is shown, move on to the next question.
+function advance() {
+  if (newBtn.disabled) return;      // a fetch is in flight
+  if (revealBtn.disabled) nextQuestion();
+  else reveal();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key === ' ') { e.preventDefault(); advance(); }
+  if (e.key.toLowerCase() === 'n') nextQuestion();
+});
+
+setMode('tossup');
+</script>
+</body>
+</html>
