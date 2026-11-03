@@ -269,10 +269,9 @@
   <div id="question"><span class="placeholder">Press “New Question” to start.</span></div>
   <div id="answer"><span class="label">Answer</span><span id="answer-text"></span></div>
   <div class="buttons">
-    <button class="primary" id="new-btn">New Question</button>
-    <button id="reveal-btn" disabled>Reveal Answer</button>
+    <button class="primary" id="go-btn">Start</button>
   </div>
-  <div class="hint"><b>Space</b> = reveal answer, then next question. (<b>N</b> = skip to a new question.) Questions from the hsquizbowl packet archive via qbreader.org.</div>
+  <div class="hint"><b>Space</b> = press the button. (<b>N</b> = skip to a new question.) Questions from the hsquizbowl packet archive via qbreader.org.</div>
 </div>
 
 <script>
@@ -280,8 +279,7 @@ const questionEl = document.getElementById('question');
 const answerEl = document.getElementById('answer');
 const answerTextEl = document.getElementById('answer-text');
 const metaEl = document.getElementById('meta');
-const newBtn = document.getElementById('new-btn');
-const revealBtn = document.getElementById('reveal-btn');
+const goBtn = document.getElementById('go-btn');
 const categorySel = document.getElementById('category');
 const difficultySel = document.getElementById('difficulty');
 const modeTossupBtn = document.getElementById('mode-tossup');
@@ -291,21 +289,31 @@ let mode = 'tossup';          // 'tossup' | 'bonus'
 let queues = { tossup: [], bonus: [] };
 let currentBonus = null;      // the bonus being played
 let bonusPart = 0;            // how many parts have been revealed
+let hasHidden = false;        // is there an answer left to reveal?
+let loading = false;
+
+function updateButton() {
+  const noun = mode === 'tossup' ? 'Tossup' : 'Bonus';
+  if (loading) goBtn.textContent = 'Loading…';
+  else if (hasHidden) goBtn.textContent = 'Reveal Answer';
+  else goBtn.textContent = 'Next ' + noun;
+  goBtn.disabled = loading;
+}
 
 function setMode(m) {
   mode = m;
   modeTossupBtn.classList.toggle('active', m === 'tossup');
   modeBonusBtn.classList.toggle('active', m === 'bonus');
-  newBtn.textContent = m === 'tossup' ? 'New Tossup' : 'New Bonus';
   resetCard();
 }
 
 function resetCard() {
-  questionEl.innerHTML = '<span class="placeholder">Press “' + newBtn.textContent + '” to start.</span>';
+  hasHidden = false;
+  currentBonus = null;
+  updateButton();
+  questionEl.innerHTML = '<span class="placeholder">Press “' + goBtn.textContent + '” to start.</span>';
   answerEl.classList.remove('shown');
   metaEl.innerHTML = '';
-  revealBtn.disabled = true;
-  currentBonus = null;
 }
 
 async function fetchBatch(kind) {
@@ -333,8 +341,10 @@ function setMeta(q) {
 }
 
 async function nextQuestion() {
-  newBtn.disabled = true;
-  revealBtn.disabled = true;
+  if (loading) return;
+  loading = true;
+  hasHidden = false;
+  updateButton();
   answerEl.classList.remove('shown');
   questionEl.innerHTML = '<span class="placeholder">Loading…</span>';
   metaEl.innerHTML = '';
@@ -358,11 +368,12 @@ async function nextQuestion() {
       questionEl.appendChild(leadin);
       showBonusPart(0);
     }
-    revealBtn.disabled = false;
+    hasHidden = true;
   } catch (e) {
     questionEl.innerHTML = '<span id="error">Couldn’t load a question (' + e.message + '). Check your connection and try again.</span>';
   } finally {
-    newBtn.disabled = false;
+    loading = false;
+    updateButton();
   }
 }
 
@@ -377,10 +388,10 @@ function showBonusPart(i) {
 }
 
 function reveal() {
-  if (revealBtn.disabled) return;
+  if (!hasHidden) return;
   if (mode === 'tossup') {
     answerEl.classList.add('shown');
-    revealBtn.disabled = true;
+    hasHidden = false;
     answerEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     const partEl = document.getElementById('part-' + bonusPart);
@@ -392,25 +403,24 @@ function reveal() {
     if (bonusPart < currentBonus.parts.length) {
       showBonusPart(bonusPart);
     } else {
-      revealBtn.disabled = true;
+      hasHidden = false;
       ans.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
+  updateButton();
 }
 
-newBtn.addEventListener('click', nextQuestion);
-revealBtn.addEventListener('click', reveal);
+function advance() {
+  if (loading) return;
+  if (hasHidden) reveal();
+  else nextQuestion();
+}
+
+goBtn.addEventListener('click', advance);
 modeTossupBtn.addEventListener('click', () => setMode('tossup'));
 modeBonusBtn.addEventListener('click', () => setMode('bonus'));
 categorySel.addEventListener('change', () => { queues = { tossup: [], bonus: [] }; });
 difficultySel.addEventListener('change', () => { queues = { tossup: [], bonus: [] }; });
-// Space is the single "advance" key: reveal what's hidden, and once everything
-// on the card is shown, move on to the next question.
-function advance() {
-  if (newBtn.disabled) return;      // a fetch is in flight
-  if (revealBtn.disabled) nextQuestion();
-  else reveal();
-}
 
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'SELECT') return;
