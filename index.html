@@ -8,6 +8,10 @@
 <meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14161c" media="(prefers-color-scheme: dark)">
 <title>Quizbowl Practice</title>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="Quizbowl">
 <style>
   :root {
     --bg: #f6f4ef;
@@ -429,6 +433,12 @@ document.addEventListener('keydown', (e) => {
 });
 
 setMode('tossup');
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
